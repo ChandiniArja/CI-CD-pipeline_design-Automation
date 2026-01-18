@@ -1,0 +1,108 @@
+name: Embedded CI/CD Pipeline
+
+on:
+  push:
+    branches: [develop]
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  # ========== BUILD STAGE ==========
+  build-a:
+    name: Build Component A
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          cd components/a
+          make clean
+          make -j$(nproc)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: component-a-bin
+          path: components/a/*.bin
+
+  build-b:
+    name: Build Component B
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          cd components/b
+          make clean
+          make -j$(nproc)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: component-b-bin
+          path: components/b/*.bin
+
+  build-c:
+    name: Build Component C
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          cd components/c
+          make clean
+          make -j$(nproc)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: component-c-bin
+          path: components/c/*.bin
+
+  # ========== TEST STAGE ==========
+  test-a:
+    name: Test Component A
+    needs: build-a
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: component-a-bin
+      - run: cd components/a && make test
+
+  test-b:
+    name: Test Component B
+    needs: build-b
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: component-b-bin
+      - run: cd components/b && make test
+
+  test-c:
+    name: Test Component C
+    needs: build-c
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: component-c-bin
+      - run: cd components/c && make test
+
+  # ========== PACKAGE STAGE ==========
+  package:
+    name: Create Deployment Package
+    needs: [test-a, test-b, test-c]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          # Download all built binaries
+          mkdir -p deploy/binaries
+          gh run download ${{ github.run_id }} --name component-a-bin --dir deploy/binaries/a
+          gh run download ${{ github.run_id }} --name component-b-bin --dir deploy/binaries/b
+          gh run download ${{ github.run_id }} --name component-c-bin --dir deploy/binaries/c
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: |
+          # Create package
+          tar -czvf embedded_release.tar.gz deploy/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: embedded-release
+          path: embedded_release.tar.gz
