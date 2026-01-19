@@ -1,4 +1,4 @@
-name: Embedded CI/CD Pipeline
+name: Embedded CI CD Pipeline
 
 on:
   push:
