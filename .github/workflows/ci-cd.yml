@@ -7,7 +7,7 @@ on:
     - cron: "0 0 * * *"
 
 jobs:
-  # ========== BUILD STAGE ==========
+  # ========== BUILD STAGE ===========
   build-a:
     name: Build Component A
     runs-on: ubuntu-latest
