@@ -4,6 +4,7 @@ on:
   push:
     branches: [develop]
   schedule:
+    # NOTE: cron is in UTC in GitHub Actions
     - cron: "0 0 * * *"
 
 jobs:
@@ -16,7 +17,7 @@ jobs:
       - run: |
           cd components/a
           make clean
-          make -j$(nproc)
+          make -j"$(nproc)"
       - uses: actions/upload-artifact@v4
         with:
           name: component-a-bin
@@ -30,7 +31,7 @@ jobs:
       - run: |
           cd components/b
           make clean
-          make -j$(nproc)
+          make -j"$(nproc)"
       - uses: actions/upload-artifact@v4
         with:
           name: component-b-bin
@@ -44,7 +45,7 @@ jobs:
       - run: |
           cd components/c
           make clean
-          make -j$(nproc)
+          make -j"$(nproc)"
       - uses: actions/upload-artifact@v4
         with:
           name: component-c-bin
@@ -60,7 +61,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: component-a-bin
-      - run: cd components/a && make test
+          path: components/a
+      - run: |
+          cd components/a
+          make test
 
   test-b:
     name: Test Component B
@@ -71,7 +75,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: component-b-bin
-      - run: cd components/b && make test
+          path: components/b
+      - run: |
+          cd components/b
+          make test
 
   test-c:
     name: Test Component C
@@ -82,7 +89,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: component-c-bin
-      - run: cd components/c && make test
+          path: components/c
+      - run: |
+          cd components/c
+          make test
 
   # ========== PACKAGE STAGE ==========
   package:
@@ -90,8 +100,7 @@ jobs:
     needs: [test-a, test-b, test-c]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Download all component binaries
         uses: actions/download-artifact@v4
@@ -102,7 +111,7 @@ jobs:
         run: |
           echo "Creating embedded deployment package"
           tar -czvf embedded_release.tar.gz deploy/
-          
+
       - uses: actions/upload-artifact@v4
         with:
           name: embedded-release
