@@ -10,6 +10,10 @@ clean:
 
 test:
 	echo "Running unit tests for Component A..."
-	gcc -o test_runner test_math.c math_ops.c 2>/dev/null || echo "No test files found"
-	./test_runner 2>/dev/null || echo "Tests not implemented yet"
+	if [ -f test_math.c ] && [ -f math_ops.c ]; then \
+		gcc -o test_runner test_math.c math_ops.c && \
+		./test_runner; \
+	else \
+		echo "No test sources found, skipping tests"; \
+	fi
 	echo "✅ Test phase complete"
